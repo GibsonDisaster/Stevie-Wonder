@@ -1,7 +1,7 @@
 module Main where
     import System.Environment (getArgs)
-    import Text.ParserCombinators.Parsec
     import Prelude hiding (words)
+    import Text.ParserCombinators.Parsec
 
     data SpecType = Spec [SpecType] String
                   | SpecComment String
@@ -13,6 +13,10 @@ module Main where
     prep :: SpecType -> String
     prep (SpecLine (SpecHead h) (SpecTail t)) = h ++ "= " ++ t ++ "\n"
     prep (SpecComment c) = "#" ++ c ++ "\n"
+
+    replace :: String -> String -> SpecType -> SpecType
+    replace target repl (SpecLine (SpecHead target) (SpecTail _)) = SpecLine (SpecHead target) (SpecTail repl)
+    replace target repl st = st
 
     word :: Parser String
     word = many1 (oneOf (['A'..'Z'] ++ ['a'..'z'] ++ ['.', '*', ',', '%', '_']))
@@ -64,8 +68,11 @@ module Main where
     main :: IO ()
     main = do
         file <- readFile "copy.spec"
+        input_name <- fmap head getArgs
         let (ls, r) = case parse mainParser "ERROR" file of
                         (Left e) -> error "ERROR"
                         (Right (Spec ls' r')) -> (ls', r')
         writeFile "copy.spec" "[app]\n"
+        let replaced = map (replace "package.name" input_name) ls
         mapM_ (\s -> appendFile "copy.spec" (prep s)) ls
+        appendFile "copy.spec" r
