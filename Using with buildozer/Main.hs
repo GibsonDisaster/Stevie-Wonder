@@ -1,4 +1,5 @@
 module Main where
+    import System.Environment (getArgs)
     import Text.ParserCombinators.Parsec
     import Prelude hiding (words)
 
