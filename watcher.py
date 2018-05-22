@@ -5,8 +5,8 @@ import itertools
 
 '''
 TODO
-    [ ] Correctly parse cmd arg
-    [ ] (In turn) correctly parse extra_cmd arg
+    [X] Correctly parse cmd args
+    [X] (In turn) correctly parse extra_cmd arg
 '''
 
 class AppConfig:

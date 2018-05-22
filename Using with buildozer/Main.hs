@@ -1,5 +1,6 @@
 module Main where
     import System.Environment (getArgs)
+    import System.IO.Strict as S
     import Prelude hiding (words)
     import Text.ParserCombinators.Parsec
 
@@ -15,8 +16,7 @@ module Main where
     prep (SpecComment c) = "#" ++ c ++ "\n"
 
     replace :: String -> String -> SpecType -> SpecType
-    replace target repl (SpecLine (SpecHead target) (SpecTail _)) = SpecLine (SpecHead target) (SpecTail repl)
-    replace target repl st = st
+    replace target repl st@(SpecLine (SpecHead name) (SpecTail _)) = if (target == name) then SpecLine (SpecHead target) (SpecTail repl) else st
 
     word :: Parser String
     word = many1 (oneOf (['A'..'Z'] ++ ['a'..'z'] ++ ['.', '*', ',', '%', '_']))
@@ -62,17 +62,17 @@ module Main where
         newlines
         ls <- many1 ((try parseComment) <|> (try parseLine))
         string "[buildozer]"
-        r <- many1 (anyChar)
+        r <- many1 anyChar
         return $ Spec ls r
 
     main :: IO ()
     main = do
-        file <- readFile "copy.spec"
+        file <- S.run $ S.readFile "buildozer.spec"
         input_name <- fmap head getArgs
         let (ls, r) = case parse mainParser "ERROR" file of
                         (Left e) -> error "ERROR"
                         (Right (Spec ls' r')) -> (ls', r')
-        writeFile "copy.spec" "[app]\n"
+        S.run $ S.writeFile "copy.spec" "[app]\n"
         let replaced = map (replace "package.name" input_name) ls
-        mapM_ (\s -> appendFile "copy.spec" (prep s)) ls
-        appendFile "copy.spec" r
+        mapM_ (\s -> S.run (S.appendFile "copy.spec" (prep s))) ls
+        S.run $ S.appendFile "copy.spec" r
