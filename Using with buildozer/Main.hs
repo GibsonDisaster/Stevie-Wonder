@@ -17,6 +17,7 @@ module Main where
 
     replace :: String -> String -> SpecType -> SpecType
     replace target repl st@(SpecLine (SpecHead name) (SpecTail _)) = if (target == name) then SpecLine (SpecHead target) (SpecTail repl) else st
+    replace _ _ st = st
 
     word :: Parser String
     word = many1 (oneOf (['A'..'Z'] ++ ['a'..'z'] ++ ['.', '*', ',', '%', '_']))
@@ -67,15 +68,13 @@ module Main where
 
     main :: IO ()
     main = do
-        file <- S.run $ S.readFile "buildozer.spec"
         input_name <- fmap head getArgs
-        case parse mainParser "ERROR" file of
-            (Left e) -> S.run $ S.putStrLn (show e)
-            (Right (Spec ls' r')) -> S.run $ S.putStrLn "WORKED"
-        let (ls, r) = case parse mainParser "ERROR" file of
-                        (Left e) -> error "ERROR"
-                        (Right (Spec ls' r')) -> (ls', r')
-        S.run $ S.writeFile "copy.spec" "[app]\n"
-        let replaced = map (replace "package.name" "Henning") ls
-        mapM_ (\s -> S.run (S.appendFile "copy.spec" (prep s))) ls
-        S.run $ S.appendFile "copy.spec" r
+        S.run $ do
+            file <- S.readFile "buildozer1.spec"
+            let (ls, r) = case parse mainParser "ERROR" file of
+                            (Left e) -> error "ERROR"
+                            (Right (Spec ls' r')) -> (ls', r')
+            S.writeFile "copy.spec" "[app]\n"
+            let replaced = map (replace "package.name " input_name) ls
+            mapM_ (\s -> S.appendFile "buildozer.spec" (prep s)) replaced
+            S.appendFile "buildozer.spec" r
